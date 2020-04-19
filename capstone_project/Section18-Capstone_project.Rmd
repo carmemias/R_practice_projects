@@ -1,0 +1,235 @@
+---
+title: "Capstone Project"
+author: "Carme Mias"
+date: "18/04/2020"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+install.packages( c('magrittr', 'ggplot2', 'scales'), contriburl = "https://cran.ma.imperial.ac.uk/" )
+require(magrittr)
+require(ggplot2)
+require(scales)
+```
+
+# Project description 
+
+Find 3 replacement players where:
+1. The total combined salary of the three players can not exceed 15 million dollars.
+2. Their combined number of At Bats (AB) needs to be equal to or greater than the lost players.
+3. Their mean OBP had to equal to or greater than the mean OBP of the lost players.
+
+# Steps
+
+## Import Data
+
+```{r import_data}
+batting <- read.csv('~/Documents/learning/1.R/udemy/practice/Capstone_Project/data/Batting.csv')
+salaries <- read.csv('~/Documents/learning/1.R/udemy/practice/Capstone_Project/data/Salaries.csv')
+```
+
+### Preview Imported Data
+
+```{r preview_batting_data}
+str(batting)
+knitr::kable(head(batting), caption="Preview of the Batting dataset")
+```
+```{r preview_salaries_data}
+str(salaries)
+knitr::kable(head(salaries), caption="Preview of the Salaries dataset")
+```
+
+## Initial Data Exploration
+
+The Oackland Athletics team ID is: OAK
+The lost players were: Jason Giambi (giambja01), Johnny Damon (damonjo01) and Jason Isringhausen (isrinja01)
+
+### Salaries Dataset
+
+We'll assume that the players available to buy are those who were in other teams in 2001. 
+The IDs of all available players will be stored in vector *available_players*.
+
+```{r available_players}
+nonOAK_filter <- salaries$teamID != 'OAK' & salaries$yearID == 2001
+filtered_salaries <- salaries[nonOAK_filter,]
+
+available_players <- as.vector(filtered_salaries$playerID)
+
+print( paste0("There are ", length(available_players), " players in the list.") )
+```
+
+From the filtered salaries dataset, we only need the player IDs and their salaries:
+
+```{r available_players_salaries}
+ap_2001_sal <- filtered_salaries[,c('playerID', 'salary')]
+
+knitr::kable(head(ap_2001_sal), caption="Preview of the available players' salaries data")
+```
+
+### Batting Dataset
+
+The lost players' combined AB is found and assigned to object *lp_combined_AB*:
+
+```{r combined_lost_players_AB}
+lost_players <- c('giambja01','damonjo01', 'isrinja01')
+lp_filter <- (batting$playerID %in% lost_players) & batting$yearID == 2001
+lp_2001_batting <- batting[lp_filter,]
+lp_combined_AB <- lp_2001_batting$AB %>% as.vector() %>% sum()
+
+print(paste0("The lost players' combined Average Batting is ", lp_combined_AB))
+```
+
+Now, let's use the batting dataset to filter the 2001 data for the available players with at least 1 hit. 
+The new filtered batting dataset is assigned to object *ap_batting*.
+
+```{r available_players_batting}
+batting_filter <- batting$playerID %in% available_players & 
+                  batting$yearID == 2001 & batting$H > 0 & !is.na(batting$H)
+ap_batting <- batting[batting_filter,]
+
+print(paste0("There are ", nrow(ap_batting), " available players left."))
+```
+
+## Other Useful Calculations
+
+###  Batting Average
+
+First, we'll define a reusable function to work out the proportions and then use it to add a new variable Batting Average, BA, to the Batting dataset:
+
+```{r batting_average}
+set_proportion <- function(x, y){
+  result <- 0
+  if( y > 0) {
+    result <-x/y
+  }
+  return(result)
+}
+
+for(row in 1:nrow(ap_batting)){
+  ap_batting[row, 'BA'] <- set_proportion(ap_batting$H[row], ap_batting$AB[row])
+}
+
+knitr::kable(head(ap_batting[,c('playerID', 'yearID', 'AB', 'H', 'BA')]), caption = "Preview of the available players' new Battting Average(BA) variable")
+```
+
+Let's double check that we don't have empty Batting averages:
+
+```{r any_empty_averages}
+print(paste0("Are there any empty batting averages in the data frame? ", any(is.na(batting$BA)) ))
+```
+
+### On Base Percentage
+
+The On-base percentage is calculated using this formula: *OBP=(H+BB+HBP)/(AB+BB+HBP+SF)*
+Further info can be found from [Wikipedia](http://en.wikipedia.org/wiki/On-base_percentage).
+
+For readability's sake, we'll also create a separate function that will be used to calculate the OBP for each observation amd add it to the filtered Batting data frame.
+
+```{r calculate_on_base_percentage, warning = FALSE}
+set_obp <- function(df){
+  result <- 0
+  numerator <- df$H + df$BB + df$HBP
+  denominator <- df$AB + df$BB + df$HBP + df$SF
+
+  if(denominator>0){
+    result <- numerator/denominator
+  }
+  
+  return(result)
+}
+
+ap_batting$OBP <- set_obp(ap_batting)
+
+knitr::kable(head(ap_batting[, c('playerID', 'AB', 'H', 'BB', 'HBP', 'SF', 'OBP') ]), caption="Preview of the available players' new On-Base Percentage variable")
+```
+
+As one of the project conditions is that the selected players must have a combined mean OBP equal to or greater than the mean OBP of the lost players, we need to calculate the lost players' mean OBP.
+We assign this to object *lp_mean_OBP*:
+
+```{r calculate_lost_players_mean_obp}
+for(row in 1:nrow(lp_2001_batting)){
+  lp_2001_batting[row, 'OBP'] <- set_obp(lp_2001_batting[row,])
+}
+lp_mean_OBP <- mean(lp_2001_batting$OBP)
+
+print(paste0("Lost players' mean OBP is ", lp_mean_OBP))
+```
+
+### Slugging Percentage
+
+__(From the notes) Hint: For SLG, you need 1B (Singles), this isn't in your data frame.__ 
+__However you can calculate it by subtracting doubles,triples, and home runs from total hits (H):__
+__*1B = H-2B-3B-HR*__
+
+```{r calculate_sluggish_percentage}
+set_x1b <- function(h, x2b=0, x3b=0, hr=0){
+  return(h-x2b-x3b-hr)
+}
+ap_batting$X1B <- set_x1b(ap_batting$H, ap_batting$X2B, ap_batting$X3B, ap_batting$HR)
+
+for(row in 1:nrow(ap_batting)){
+  ap_batting[row, 'SLG'] <- set_proportion(ap_batting$H[row], ap_batting$X1B[row])
+}
+
+knitr::kable(head(ap_batting[, c('playerID','H', 'X1B', 'SLG') ]), caption="Preview of the available players' new Sluggish Percentage variable")
+```
+
+## Merge Salary and Batting Data
+
+Now that we have everything we need, let's bring it all together:
+
+```{r combined_data}
+combined_data <- merge(ap_batting, ap_2001_sal, by="playerID")
+
+knitr::kable(head(combined_data[, c('playerID', 'salary', 'AB', 'BA', 'OBP', 'SLG')] ), caption="Preview of the combined data")
+```
+
+## Find replacement players
+
+To make sure the final salary combination is not over the limit, we'll start by considering only those players with a salary less or equal to the maximum divided by 3:
+
+```{r filter_out_high_salaries}
+combined_data <- combined_data[ combined_data$salary <= 5000000, ]
+
+print(paste0("There are ", nrow(combined_data), " available players left."))
+```
+
+Let's see how this data looks like:
+
+```{r salaries_AB_scattergraph}
+ggplot(combined_data, aes(x=salary, y=AB)) + 
+  geom_point() + 
+  geom_hline( yintercept = lp_combined_AB/3, color = "red" )
+```
+
+Let's make sure we only take only those players with an AB higher than the lost players mean and plot their OBP to salary data:
+
+```{r obp_salary_scatterplot}
+combined_data <- combined_data[ combined_data$AB > lp_combined_AB/3 ,]
+
+ggplot(combined_data, aes(x=salary, y=OBP)) + geom_point() + geom_hline( yintercept = lp_mean_OBP, color = "red" )
+```
+
+We can see from this last graph that most of the remaining available players have a mean OBP above the lost players'. 
+
+```{r final_remaining_players}
+combined_data <- combined_data[combined_data$OBP > lp_mean_OBP,]
+
+print(paste0("There are ", nrow(combined_data), " players left."))
+```
+
+So picking any random 3 should do the job:
+
+```{r pick_three_random_players}
+random_row_numbers <- runif(3, 1, nrow(combined_data))
+player1 <- combined_data[random_row_numbers[1],]
+player2 <- combined_data[random_row_numbers[2],]
+player3 <- combined_data[random_row_numbers[3],]
+
+print(paste("The selected players are:", player1$playerID, player2$playerID, player3$playerID, sep=" "))
+print(paste0( "Their combined salary is: ", dollar(sum( c(player1$salary, player2$salary, player3$salary) )) ))
+print(paste0( "Their combined AB is: ", sum( c(player1$AB, player2$AB, player3$AB) ), ", whilst the lost players combined AB is: ", lp_combined_AB ))
+print(paste0( "Their mean OBP is: $", mean( c(player1$OBP, player2$OBP, player3$OBP) ), ", whilst the lost players mean OBP is: ", lp_mean_OBP ))
+```
