@@ -5,3 +5,30 @@ date: "02/05/2020"
 output: html_document
 ---
 
+```{r setup, include=FALSE}
+install.packages('https://cran.r-project.org/src/contrib/ISLR_1.2.tar.gz', repos=NULL, type='source')
+require(ISLR)
+```
+# Applied Exercises Chapter 2.
+
+## Ex.8 p. 54
+The College dataset.
+
+First, explore the data:
+```{r import_college_data}
+college_data <- read.csv('data/College.csv')
+summary(college_data)
+```
+
+We'll turn the row names into a column called College.Name:
+```{r college_row_names}
+rownames(college_data)=college_data[,1]
+colnames(college_data)[1] <- "College.Name"
+head(college_data)
+```
+
+Let's have a look at the data in the first 10 columns:
+```{r plot_first_10_columns}
+pairs(college_data[,1:10])
+```
+
