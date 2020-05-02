@@ -1,0 +1,7 @@
+---
+title: "ISLR_Chapter2"
+author: "Carme Mias"
+date: "02/05/2020"
+output: html_document
+---
+
