@@ -78,3 +78,39 @@ barplot(cbind(top_10_private_elite$Apps, top_10_private_elite$Accept, top_10_pri
 
 barplot(cbind(top_10_public_elite$Apps, top_10_public_elite$Accept, top_10_public_elite$Enroll) ~ top_10_public_elite$College.Name, beside=TRUE, col=c("lightblue", "green", "orange"), legend.text = TRUE, xlab="College Name", main = "Top 10 Public Elite Colleges")
 ```
+
+## Ex.10 p. 55
+The Boston dataset. The dataset does not include town names.
+
+```{r import_ex10_data}
+library(MASS)
+str(Boston)
+head(Boston)
+```
+
+We'll do some initial explorations:
+```{r initial_boston_exploration}
+pairs(Boston[,c("crim", "zn", "indus", "nox", "rm", "dis", "rad", "tax", "ptratio", "medv")])
+```
+
+Some interesting patterns seem to appear around various variable pairings. Let's expore them further:
+```{r crime_rate_comparisons}
+attach(Boston)
+op <- par(mfrow=c(2,3))
+plot(x=zn, y=crim, xlab="Proportion of residential plots over 25,000 sq.ft", ylab="Capita Crime Rate")
+plot(x=medv, y=crim, xlab="Median value of ower-occupied homes in $1000s", ylab="Capita Crime Rate")
+plot(x=ptratio, y=crim, xlab="Pupil-teacher ratio", ylab="Capita Crime Rate")
+plot(x=indus, y=crim, xlab="Proportion of non-retail business acres", ylab="Capita Crime Rate")
+plot(x=dis, y=crim, xlab="Distance to employment centre", ylab="Capita Crime Rate")
+plot(x=rad, y=crim, xlab="Accessibility to Radial Highway", ylab="Capita Crime Rate")
+```
+
+```{r work_population_and_pollution_comparisons}
+op <- par(mfrow=c(3,2))
+plot(x=rad, y=nox, xlab="Radial Highway accessibility rate", ylab="Nitrogen Oxides Concentration")
+plot(x=indus, y=nox, xlab="Proportion of non-retail business acres", ylab="Nitrogen Oxides Concentration")
+plot(x=dis, y=nox, xlab="Distance to employment centre", ylab="Nitrogen Oxides Concentration")
+plot(x=indus, y=rad, xlab="Proportion of non-retail business acres", ylab="Radial Highway accessibility rate")
+plot(x=lstat, y=nox, xlab="Lower status population (%)", ylab="Nitrogen Oxides Concentration")
+plot(x=lstat, y=rm, xlab="Lower status population (%)", ylab="Rooms per dwelling")
+```
