@@ -2,7 +2,9 @@
 title: "ISLR_Chapter2"
 author: "Carme Mias"
 date: "02/05/2020"
-output: html_document
+output: 
+  html_document: 
+    toc: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -34,7 +36,7 @@ pairs(college_data[,1:10])
 
 And plot `Outstate` with `Private`:
 ```{r outstate_with_private}
-attach(college_data)
+invisible(attach(college_data))
 plot(as.factor(Private), Outstate, ylab = "Outstate", xlab="Private")
 ```
 The results show that private colleges take more out of state students than non-private colleges.
@@ -130,17 +132,22 @@ print(paste0("SuburbA has the highest percentage of lower-status population at: 
 print(paste0("SuburbB has lowest percentage of lower-status population at: ", lowest_lstat,"%" ))
 ```
 
-Let's compare prepare the data from those two suburbs before we start:
+Let's prepare the data from those two suburbs before we start:
 ```{r suburb_comparison_setup}
-highest_and_lowest <- Boston[lstat %in% c(lowest_lstat, highest_lstat),]
-highest_and_lowest[order(lstat),]
+highest_and_lowest <- Boston[Boston$lstat==lowest_lstat | Boston$lstat==highest_lstat,]
+invisible(highest_and_lowest[order(lstat),])
 rownames(highest_and_lowest)<-c("suburbB", "suburbA")
 pairs(highest_and_lowest)
 ```
 
 And now, we can plot the various variables:
 ```{r suburb_comparison}
-attach(highest_and_lowest)
+invisible(attach(highest_and_lowest))
 # c("crim","indus", "nox", "rm", "age", "dis", "rad", "tax", "ptratio", "black", "medv")
 barplot(cbind(crim, ptratio, rm, rad, dis) ~ lstat, beside=TRUE, names.arg = c("suburbB", "suburbA"), legend.text=c("Crime Rate", "Pupil-Teacher Ratio", "Average number of rooms", "Distance to highway", "Distance to work centre"), xlab = "Suburbs with Lowest and Highest proportion of lower-status population")
+```
+
+The variable relating to race seems to lack in detail but it is not shown to be a factor in the population status:
+```{r race_vs_lstat}
+barplot(black ~ lstat, ylab="Proportion of Black population", xlab = "Suburbs with Lowest and Highest proportion of lower-status population", names.arg = c("suburbB", "suburbA"))
 ```
