@@ -93,7 +93,7 @@ We'll do some initial explorations:
 pairs(Boston[,c("crim", "zn", "indus", "nox", "rm", "dis", "rad", "tax", "ptratio", "medv")])
 ```
 
-Some interesting patterns seem to appear around various variable pairings. Let's expore them further:
+Some interesting patterns seem to appear around Crime rates. Let's expore them further:
 ```{r crime_rate_comparisons}
 attach(Boston)
 op <- par(mfrow=c(2,3))
@@ -105,6 +105,7 @@ plot(x=dis, y=crim, xlab="Distance to employment centre", ylab="Capita Crime Rat
 plot(x=rad, y=crim, xlab="Accessibility to Radial Highway", ylab="Capita Crime Rate")
 ```
 
+Also, some pollution and population level comparisons to re. distance to highway and work centre:
 ```{r work_population_and_pollution_comparisons}
 op <- par(mfrow=c(3,2))
 plot(x=rad, y=nox, xlab="Radial Highway accessibility rate", ylab="Nitrogen Oxides Concentration")
@@ -113,4 +114,33 @@ plot(x=dis, y=nox, xlab="Distance to employment centre", ylab="Nitrogen Oxides C
 plot(x=indus, y=rad, xlab="Proportion of non-retail business acres", ylab="Radial Highway accessibility rate")
 plot(x=lstat, y=nox, xlab="Lower status population (%)", ylab="Nitrogen Oxides Concentration")
 plot(x=lstat, y=rm, xlab="Lower status population (%)", ylab="Rooms per dwelling")
+```
+
+Finally, a deeper look at the suburbs with the highest and lowest proportion of lowest status population:
+```{r lowest_status_population}
+highest_lstat <- max(Boston[,"lstat"])
+invisible(nrow(Boston[lstat==highest_lstat,]))
+suburbA <- Boston[lstat==highest_lstat,]
+
+lowest_lstat <- min(Boston[,"lstat"])
+invisible(nrow(Boston[lstat==lowest_lstat,]))
+suburbB <- Boston[lstat==lowest_lstat,]
+  
+print(paste0("SuburbA has the highest percentage of lower-status population at: ", highest_lstat,"%" ))
+print(paste0("SuburbB has lowest percentage of lower-status population at: ", lowest_lstat,"%" ))
+```
+
+Let's compare prepare the data from those two suburbs before we start:
+```{r suburb_comparison_setup}
+highest_and_lowest <- Boston[lstat %in% c(lowest_lstat, highest_lstat),]
+highest_and_lowest[order(lstat),]
+rownames(highest_and_lowest)<-c("suburbB", "suburbA")
+pairs(highest_and_lowest)
+```
+
+And now, we can plot the various variables:
+```{r suburb_comparison}
+attach(highest_and_lowest)
+# c("crim","indus", "nox", "rm", "age", "dis", "rad", "tax", "ptratio", "black", "medv")
+barplot(cbind(crim, ptratio, rm, rad, dis) ~ lstat, beside=TRUE, names.arg = c("suburbB", "suburbA"), legend.text=c("Crime Rate", "Pupil-Teacher Ratio", "Average number of rooms", "Distance to highway", "Distance to work centre"), xlab = "Suburbs with Lowest and Highest proportion of lower-status population")
 ```
