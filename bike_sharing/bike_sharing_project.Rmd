@@ -1,0 +1,32 @@
+---
+title: "Bike Sharing Project"
+author: Carme Mias
+date: June 2020
+output: html_notebook
+---
+
+# BIKE SHARING PROJECT
+
+Project exercise from the "Data Science and machine Learning bootcamp with R" course (section 21) and based on the [Bike Sharing](https://www.kaggle.com/c/bike-sharing-demand/overview) Kaggle competition.
+
+Data available to download from the Kaggle website.
+
+```{r required-libraries, include=FALSE, eval=TRUE}
+install.packages(c(ggplot2))
+require('ggplot2')
+```
+
+## GET THE DATA
+
+```{r initial-data-frames}
+training_data <- read.csv('data/train.csv')
+test_data <- read.csv('data/test.csv')
+
+head(training_data)
+summary(training_data)
+```
+
+The variable we are trying to predict is `count`.
+
+## DATA EXPLORATION
+
