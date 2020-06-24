@@ -5,9 +5,7 @@ date: June 2020
 output: html_notebook
 ---
 
-# BIKE SHARING PROJECT
-
-Project exercise from the "Data Science and machine Learning bootcamp with R" course (section 21) and based on the [Bike Sharing](https://www.kaggle.com/c/bike-sharing-demand/overview) Kaggle competition.
+Project exercise from the "Data Science and machine Learning bootcamp with R" course (section 21, Linear Regression) and using the data from the [Bike Sharing](https://www.kaggle.com/c/bike-sharing-demand/overview) Kaggle competition.
 
 Data available to download from the Kaggle website.
 
@@ -16,7 +14,7 @@ install.packages(c(ggplot2))
 require('ggplot2')
 ```
 
-## GET THE DATA
+## Get the Data
 
 ```{r initial-data-frames}
 training_data <- read.csv('data/train.csv')
@@ -24,9 +22,28 @@ test_data <- read.csv('data/test.csv')
 
 head(training_data)
 summary(training_data)
+nrow(training_data)
 ```
 
 The variable we are trying to predict is `count`.
 
-## DATA EXPLORATION
+## Data Exploration
+
+First, a temperature/count scatterplot:
+
+```{r temperature-count-plot}
+ggplot( training_data, aes( x=temp, y=count, color=temp ) ) + 
+  geom_point( alpha=0.3 ) + scale_color_gradient(low = 'blue', high = 'orange')  +
+  xlab( 'Temperature, Celsius' ) + ylab( 'Number of bikes rented' ) + ggtitle( 'Temperature/Count scatterplot' )
+```
+
+Then, a datetime/count scatterplot:
+
+```{r datetime-count-scatterplot}
+ggplot( training_data, aes( x=as.POSIXct(datetime), y=count, color=temp ) ) + 
+  geom_point( alpha=0.3 ) + scale_color_gradient(low = 'blue', high = 'orange')  +
+  xlab( 'Date and time' ) + ylab( 'Number of bikes rented' ) + ggtitle( 'Datetime/Count scatterplot' )
+```
+
+## The Linear Regression Model
 
