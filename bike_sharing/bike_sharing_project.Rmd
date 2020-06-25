@@ -46,6 +46,7 @@ ggplot( training_data, aes( x=as.POSIXct(datetime), y=count, color=temp ) ) +
   geom_point( alpha=0.3 ) + scale_color_gradient(low = 'blue', high = 'orange')  +
   xlab( 'Date and time' ) + ylab( 'Number of bikes rented' ) + ggtitle( 'Datetime/Count scatterplot' )
 ```
+From the graph, we can conclude that, in general, the number of bicycles rented has been growing steadily and that there are more rentals when the temperature is high than when it's low.
 
 ## The Linear Regression Model
 
@@ -56,6 +57,10 @@ print(temp_count_cor)
 
 ```{r season-count-boxplot}
 ggplot(training_data, aes(x=as.factor(season), y=count, color = as.factor(season))) +
-  geom_boxplot() +
+  geom_boxplot() + scale_x_discrete(labels=c("1"="Spring (1)", "2"="Summer (2)", "3"="Autumn (3)", "4"="Winter (4)")) +
   xlab( 'Season' ) + ylab( 'Number of bikes rented' ) + ggtitle( 'Season/Count boxplot' )
 ```
+
+Two characteritics stand out: one is that there are a lot of outlying values, the other is that there seemed to have been more bicycles rented in winter than in spring.
+
+## Feature Engineering
