@@ -124,3 +124,5 @@ head(test_data)
 ```{r predictions}
 bike_count_predictions <- predict(multiple_var_model, test_data)
 ```
+
+We can't calculate the mean squared error because the test data does not have the count.
