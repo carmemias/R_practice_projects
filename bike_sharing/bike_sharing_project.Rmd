@@ -64,3 +64,27 @@ ggplot(training_data, aes(x=as.factor(season), y=count, color = as.factor(season
 Two characteritics stand out: one is that there are a lot of outlying values, the other is that there seemed to have been more bicycles rented in winter than in spring.
 
 ## Feature Engineering
+
+We'll separate the time from the date and have it in a separate column called *time*.
+
+```{r time-column}
+time <- as.POSIXlt(training_data[,'datetime'])$hour
+training_data <- cbind(training_data, time)
+head(training_data)
+```
+
+Now we can see the bike use variations according to time of the day:
+
+```{r by-time-for-working-days}
+ggplot(subset(training_data, workingday == 1), aes(x=time, y=count, color=temp)) + 
+  geom_point(size = 2, alpha=0.3, position=position_jitter(w=0.35, h=0)) + scale_color_gradient(low = 'blue', high = 'orange')  +
+  xlab( 'Time of Day' ) + ylab( 'Number of bikes rented' ) + ggtitle( 'Time of Day/Count on Working Days' )
+```
+
+```{r by-time-for-non-working-days}
+ggplot(subset(training_data, workingday == 0), aes(x=time, y=count, color=temp)) + 
+  geom_point(size = 2, alpha=0.3, position=position_jitter(w=0.35, h=0)) + scale_color_gradient(low = 'blue', high = 'orange')  +
+  xlab( 'Time of Day' ) + ylab( 'Number of bikes rented' ) + ggtitle( 'Time of Day/Count on Non-Working Days' )
+```
+
+## Build the Model
