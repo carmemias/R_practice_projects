@@ -88,3 +88,39 @@ ggplot(subset(training_data, workingday == 0), aes(x=time, y=count, color=temp))
 ```
 
 ## Build the Model
+
+We'll first build an initial linear model using only one variable:
+
+```{r linear-model-temperature}
+temp_model <- lm(formula = count ~ temp, data = training_data)
+summary(temp_model)
+```
+Although the p-value is low, the R Squared value is also very low, so this model is not a good fit.
+
+Let's rty now using more variables:
+
+```{r linear-model-multiple-vars}
+multiple_var_model <- lm(formula = count ~ season + holiday + workingday + weather + temp + humidity + windspeed + time , data = training_data)
+summary(multiple_var_model)
+```
+
+Better but still not great. We can also see what the residuals don't look like a normal distribution:
+
+```{r model-residuals}
+res <- residuals(multiple_var_model)
+res <- as.data.frame(res)
+
+ggplot(res, aes(res)) + geom_histogram(fill='blue', alpha = 0.5)
+```
+
+We could also check what predictions this model would make using the test data:
+
+```{r prepare-test-data}
+time <- as.POSIXlt(test_data[,'datetime'], format="%Y-%m-%d %H:%M:%S")$hour
+test_data <- cbind(test_data, time)
+head(test_data)
+```
+
+```{r predictions}
+bike_count_predictions <- predict(multiple_var_model, test_data)
+```
