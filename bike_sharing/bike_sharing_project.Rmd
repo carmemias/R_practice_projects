@@ -97,7 +97,14 @@ summary(temp_model)
 ```
 Although the p-value is low, the R Squared value is also very low, so this model is not a good fit.
 
-Let's rty now using more variables:
+How may bike rentals does this model predict when the temperature is 25 degrees Celsius?
+
+```{r prediction}
+temp.25 <- data.frame(temp=c(25))
+print(predict(temp_model, temp.25))
+```
+
+Let's now use more variables to build the linear regression model:
 
 ```{r linear-model-multiple-vars}
 multiple_var_model <- lm(formula = count ~ season + holiday + workingday + weather + temp + humidity + windspeed + time , data = training_data)
@@ -110,7 +117,8 @@ Better but still not great. We can also see what the residuals don't look like a
 res <- residuals(multiple_var_model)
 res <- as.data.frame(res)
 
-ggplot(res, aes(res)) + geom_histogram(fill='blue', alpha = 0.5)
+ggplot(res, aes(res)) + geom_histogram(fill='blue') + 
+  xlab( 'Residual' ) + ylab( 'Number of bikes rented' ) + ggtitle( 'Residual/Count histogram' )
 ```
 
 We could also check what predictions this model would make using the test data:
