@@ -1,0 +1,9 @@
+---
+title: "Logistic Regression Project"
+author: carmemias
+date: 11th July 2020
+output: html_notebook
+---
+
+
+
