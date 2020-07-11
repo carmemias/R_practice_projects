@@ -1,0 +1,272 @@
+---
+title: "Titanic Practice Exercise"
+output: html_notebook
+author: Carme Mias
+date: 4 July 2020
+---
+
+Practice exercise based on the [Kaggle Titanic](https://www.kaggle.com/c/titanic/overview) dataset.
+
+```{r import-data}
+training_data <- read.csv('data/train.csv')
+head(training_data)
+str(training_data)
+```
+
+# Explore the data
+
+We'll use the Amelia package for the exploration, useful for finding out how much data is missing from the dataset.
+
+```{r require-packages, echo=FALSE}
+for(p in c('Amelia', 'ggplot2', 'dplyr')) { 
+  if(!(p %in% rownames(installed.packages))){
+    install.packages(p)
+  }
+}
+
+library(Amelia)
+library(ggplot2)
+library(dplyr)
+```
+
+## How much data is missing and for which variables?
+
+```{r missing-data}
+Amelia::missmap(training_data, main = "Missing Map", col = c('yellow', 'black'), legend=FALSE)
+```
+
+We can see from the map that all of the missing data is in the age column. We can also find out what the proportion is of missing age data and, later on, we'll need to decide a way to deal with it.
+
+```{r proportion-of-missing-age-data}
+proportion <- round(nrow(training_data[is.na(training_data$Age),]) * 100 /  nrow(training_data) , 2)
+paste0("The proportion of missing values in the Age column is: ", proportion , " %" )
+```
+
+## What was the make up of the passenger list?
+
+```{r passengers-by-age}
+ggplot(training_data, aes(x=Age)) + geom_bar(width = 3, fill='blue') +
+  scale_y_continuous(breaks = seq(min(0), max(160), by=10)) +
+  xlab( 'Age' ) + ylab( 'Count' ) + ggtitle( 'Passengers by Age' )
+```
+
+```{r passengers-by-gender}
+ggplot(training_data, aes(x=Sex)) + geom_bar(aes(fill=Sex)) +
+  xlab( 'Gender' ) + ylab( 'Count' ) + ggtitle( 'Passengers by Gender' )
+```
+
+```{r passengers-by-class}
+ggplot(training_data, aes(x=Pclass)) + geom_bar(aes(fill=factor(Pclass))) +
+  xlab( 'Class' ) + ylab( 'Count' ) + ggtitle( 'Passengers by Class' )
+```
+
+```{r passengers-by-class-and-gender}
+ggplot(training_data, aes(x=Pclass)) + geom_bar(aes(fill=factor(Sex))) +
+  xlab( 'Class' ) + ylab( 'Count' ) + ggtitle( 'Passengers by Class and Gender' )
+```
+
+```{r age-by-class}
+ggplot(training_data, aes(x=Pclass, y=Age)) + geom_boxplot(aes(fill=factor(Pclass))) +
+  scale_y_continuous(breaks = seq(min(0), max(80), by=5)) +
+  xlab('Class') + ylab('Age') + ggtitle('Age by class')
+```
+
+## How many passengers were travelling with family?
+
+```{r pasenger-relations}
+ggplot(training_data, aes(x=(SibSp + Parch))) + geom_bar(fill='blue') +
+  xlab( 'Number of Passenger Relations on board' ) + ylab( 'Count' ) + ggtitle( 'Passengers with relations' )
+```
+
+## How many people survived?
+
+```{r survived-by-class-graph}
+ggplot(training_data, aes(x=Survived)) + geom_bar(aes(fill=factor(Pclass))) +
+  xlab( 'Perished vs Survived' ) + ylab( 'Count' ) + ggtitle( 'Perished vs Survived by class' )
+```
+
+```{r survived-by-gender-graph}
+ggplot(training_data, aes(x=Survived)) + geom_bar(aes(fill=factor(Sex))) +
+  xlab( 'Perished vs Survived' ) + ylab( 'Count' ) + ggtitle( 'Perished vs Survived by gender' )
+```
+
+```{r survived-by-relations-count}
+ggplot(training_data, aes(x=(SibSp + Parch))) + geom_bar(aes(fill=factor(Survived))) +
+  xlab( 'Number of Passenger Relations on board' ) + ylab( 'Count' ) + ggtitle( 'Survival rate of passengers with relations' )
+```
+
+# Imputation of Age variable
+
+```{r age-imputation-by-class}
+calculate_mean <- function(data, cl) {
+  floor(mean(subset(data, subset=(!is.na(Age) & Pclass == as.integer(cl)), select = Age)$Age))
+  }
+
+impute_age <- function(data,age,class) {
+  class_1_mean <- calculate_mean(data, 1)
+  class_2_mean <- calculate_mean(data, 2)
+  class_3_mean <- calculate_mean(data, 3)
+  out <- age
+  for (i in 1:length(age)) {
+    if(is.na(age[i])){
+      if(class[i] == 1){
+        out[i] <- class_1_mean
+      } else if(class[i] == 2) {
+        out[i] <- class_2_mean
+      } else {
+        out[i] <- class_3_mean
+      }
+    } else {
+      #Age entry is not missing
+      out[i] <- age[i]
+    }    
+  }
+  return(out)
+}
+
+ImputedAge <- impute_age(training_data, training_data$Age, training_data$Pclass)
+if( !('ImputedAge' %in% colnames(training_data)) ){
+  training_data <- cbind(training_data, ImputedAge)
+}
+```
+
+The Age bar graph now looks like this:
+
+```{r passengers-by-age-and-class-post-imputation}
+ggplot(training_data, aes(x=ImputedAge)) + geom_bar(aes(fill=factor(Pclass)), width = 3) +
+  scale_y_continuous(breaks = seq(min(0), max(160), by=10)) +
+  scale_x_continuous(breaks = seq(min(0), max(80), by=5)) +
+  xlab( 'Age' ) + ylab( 'Count' ) + ggtitle( 'Passengers by Age and Class after missing data imputation' )
+```
+
+# Tidy the data
+
+Change the Survived, Pclass, and parentage variables from integers to factors:
+
+```{r turn-to-factor}
+training_data$Survived <- factor(training_data$Survived)
+training_data$Pclass <- factor(training_data$Pclass)
+training_data$SibSp <- factor(training_data$SibSp)
+```
+
+```{r add-level-to-training-data-Parch}
+training_data$Parch <- factor(training_data$Parch)
+
+# This was an unsuccessful attempt to fix the error:
+# Error in model.frame.default(Terms, newdata, na.action = na.action, xlev = object$xlevels) : factor Parch has new levels 9
+
+# l <- levels(training_data$Parch)
+# n <- length(l)
+# l[n+1] <- "9"
+# levels(training_data$Parch) <- l
+
+# Instead, I'm removing the single record where Parch was "9"
+# Here is a better solution if we had power over splitting the training and test data:
+# https://stackoverflow.com/questions/39721737/how-to-handle-errors-in-predict-function-of-r
+
+str(training_data)
+```
+
+Remove the columns that we estimate not to need for now:
+
+```{r remove-columns}
+training_data <- select(training_data, -Name, -Ticket, -Fare, -Cabin, -Age)
+```
+
+# Train the model with a Logistic Regression
+
+```{r logistic-regression-model}
+lr_model <- glm(formula = Survived ~ ., family = binomial(link = 'logit'), data = training_data)
+
+summary(lr_model)
+```
+
+According to this, it looks like the most significant variables and values are: `ImputedAge`, `Pclass` with vaules either 2 or 3 and `Sex` with value Male.
+
+# Prepare Test Data
+
+Before trying to predict the outcomes, we need to clean and tidy the test data in the same way that we did for the training data.
+
+```{r import-test-data}
+test_data <- read.csv('data/test.csv')
+head(test_data)
+str(test_data)
+```
+We can see from the structure output that there are about half less data points in the test dataset as in the training dataset.
+
+## Missing test data
+
+```{r missing-test-data}
+Amelia::missmap(test_data, main = "Missing Map", col = c('yellow', 'black'), legend=FALSE)
+```
+Unlike the training dataset, the test dataset also has missing values in the Fares variables. In our case, this will not affect much our results because we do not use that variale for our model.
+
+In the Age column, the proportion of missing data is slightly larger than in the training dataset:
+
+```{r proportion-of-missing-age-test-data}
+proportion <- round(nrow(test_data[is.na(test_data$Age),]) * 100 /  nrow(test_data) , 2)
+paste0("The proportion of missing values in the Age column is: ", proportion , " %" )
+```
+
+We'll now also impute the missing Age values for the test data, using the same functions that we used for the training data:
+
+```{r test-data-age-imputation-by-class}
+ImputedAge <- impute_age(test_data, test_data$Age, test_data$Pclass)
+if( !('ImputedAge' %in% colnames(test_data)) ){
+  test_data <- cbind(test_data, ImputedAge)
+}
+```
+
+## Tidy the test data
+
+```{r test-data-turn-to-factor}
+test_data$Pclass <- factor(test_data$Pclass)
+test_data$SibSp <- factor(test_data$SibSp)
+test_data$Parch <- factor(test_data$Parch)
+str(test_data)
+```
+
+```{r test-data-remove-columns}
+test_data <- dplyr::select(test_data, - c("Name", "Ticket", "Fare", "Cabin", "Age"))
+str(test_data)
+```
+
+```{r temp-solution-to-level9-error}
+temp_test_data <- test_data[test_data$Parch !=9,]
+```
+
+Now the test dataset is ready to be used for our predictions.
+
+# Prediction
+
+The prediction initially fails to run because the test_data `Parch` factor has one extra level ('9') than the training_data `Parch`, so we'll need to add that new level to training data and run the model again.
+
+```{r prediction}
+fitted_probabilities <- predict(lr_model, temp_test_data, type='response')
+fitted_results <- ifelse(fitted_probabilities > 0.5, 1,0)
+temp_test_data <- cbind(temp_test_data, fitted_results)
+head(temp_test_data)
+```
+
+
+```{r prediction-graph-by-gender}
+ggplot(temp_test_data, aes(x=Sex)) + geom_bar(aes(fill=factor(fitted_results))) +
+  xlab( 'Gender' ) + ylab( 'Count' ) + ggtitle( 'Survival prediction by gender' )
+```
+
+```{r prediction-graph-by-relations}
+ggplot(temp_test_data, aes(x=Parch)) + geom_bar(aes(fill=factor(fitted_results))) +
+  xlab( 'Relations on board' ) + ylab( 'Count' ) + ggtitle( 'Survival prediction by number of relations on board' )
+```
+
+# Evaluation
+
+```{r evaluation}
+# We can't find the missclassification error because the test data does not have the Survive column.
+# If we did, we would calculated with this:
+# misClassError <- mean(fitted.results != test_data$Survived)
+# The Accuracy is:
+# print( 1 - misClassError )
+# From here, we can view the confusion matrix:
+# table(test_data$Survived, fitted_probabilities>0.5)
+```
