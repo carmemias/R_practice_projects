@@ -5,5 +5,66 @@ date: 11th July 2020
 output: html_notebook
 ---
 
+# Project Aim
+
+Use the UCI Adult data to predict individuals in the dataset earn more than $50K. The variables description can be found on the [UCI website](http://archive.ics.uci.edu/ml/datasets/Adult).
+
+```{r install-packages, echo=FALSE}
+for(p in c('Amelia', 'ggplot2', 'dplyr')) { 
+  if(!(p %in% rownames(installed.packages))){
+    install.packages(p)
+  }
+}
+
+library(Amelia)
+library(ggplot2)
+library(dplyr)
+```
+
+```{r import-training_data}
+vars <- c('age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country', 'earnings')
+adult_training_data <- read.csv('data/adult.data', header = FALSE, sep = ",", quote = "", strip.white = TRUE, col.names = vars)
+str(adult_training_data)
+head(adult_training_data)
+```
+
+```{r import-test-data}
+adult_test_data <- read.csv('data/adult.test', skip = 1, header = FALSE, sep = ",", quote = "", strip.white = TRUE, col.names = vars)
+str(adult_test_data)
+head(adult_test_data)
+```
+
+# Explore the training data
+
+First, there are a lot of fields with a "?" value. Let's set them to NA and then find out how much missing data there is.
+
+```{r set-NAs}
+adult_training_data[ adult_training_data == "?" ] <- NA
+```
+
+```{r missing-data}
+Amelia::missmap(adult_training_data, main = "Missing Map", col = c('yellow', 'black'), legend=FALSE)
+```
+
+We can see that 3 columns have missing data: occupation, workclass and native.country.
+
+```{r how-much-missing-data}
+num_empties <- function(cl) {
+  num <- nrow(subset(adult_training_data, is.na(adult_training_data[cl])))
+  perc <- round(num * 100 / nrow(adult_training_data), 2)
+  
+  list(num = num, perc = perc)
+}
+
+print("How much missing data:")
+for(c in colnames(adult_training_data)){
+  if(anyNA(adult_training_data[c])){
+      print(paste("-", c, ":", num_empties(c)$num, "empty values. Or", num_empties(c)$perc, "% of the total.", sep = " " ))
+  }
+}
+
+```
+# Clean the data
+
 
 
